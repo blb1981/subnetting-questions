@@ -1,0 +1,1128 @@
+<html>
+<head>
+<title>Free Subnetting Problems</title>
+<meta name="robots" content="noindex">
+</head>
+<body>
+<script type="text/javascript">// <![CDATA[
+var random
+var octet1;
+var octet2;
+var octet3;
+var octet4;
+var ipClass;
+var numberOfNetworks;
+var numberOfHosts;
+var ipAddr;
+var numBinDigits;
+var maskBits;
+var incrementPosition;
+var incrementOctet;
+var numberOfNetworksAfter;
+var originalMaskBits;
+var question;
+var numberOfHosts;
+var numberOfHostsAfter;
+var numberOfNetworksBefore;
+
+function randomizer(from, to){		//Creates random number based on a range
+       return Math.floor(Math.random() * (to - from + 1) + from);
+}
+
+function randomRanges(outerMin,innerMin,innerMax,outerMax){		//80% of the time, it will create throw out inner range, 20% of time, outer range
+
+	var x = randomizer(1,10);
+	if (x >= 2){
+		return randomizer(innerMin, innerMax);
+	}
+	else{
+		return randomizer(outerMin, outerMax);
+	}
+}
+	
+function dec2bin(dec) {		//Convert a decimal # to binary
+    var bits = [];
+    var dividend = dec;
+    var remainder = 0;
+    while (dividend >= 2) {
+        remainder = dividend % 2;
+        bits.push(remainder);
+        dividend = (dividend - remainder) / 2;
+    }
+    bits.push(dividend);
+    bits.reverse();
+    return bits.join("");
+}
+
+function mask(bits){		//Convert binary bits to a decimal subnet mask
+	
+	var octet1Mask;
+	var octet2Mask;
+	var octet3Mask;
+	var octet4Mask;
+	var decMaskNums = new Array(0,128,192,224,240,248,252,254,255);
+	var decMask;
+	
+	if (bits >= 8 && bits <16){
+		octet1Mask = 255;
+		octet2Mask = bits - 8;
+		octet3Mask = 0;
+		octet4Mask = 0;
+		decMask = octet1Mask + '.' + decMaskNums[octet2Mask] + '.' + octet3Mask + '.' + octet4Mask;
+	}
+	else if (bits >=16 && bits <24){
+		octet1Mask = 255;
+		octet2Mask = 255;
+		octet3Mask = bits - 16;
+		octet4Mask = 0;
+		decMask = octet1Mask + '.' + octet2Mask + '.' + decMaskNums[octet3Mask] + '.' + octet4Mask;
+	}
+	else if (bits >=24 && bits <32){
+		octet1Mask = 255;
+		octet2Mask = 255;
+		octet3Mask = 255;
+		octet4Mask = bits - 24;
+		decMask = octet1Mask + '.' + octet2Mask + '.' + octet3Mask + '.' + decMaskNums[octet4Mask];
+	}
+	
+	return decMask;
+}
+
+function toggle() {		//show/hides the answers
+	var ele = document.getElementById("toggleText");
+	var text = document.getElementById("displayText");
+	if(ele.style.display == "block") {
+		ele.style.display = "none";
+		text.innerHTML = "<u>Show Answer</u>";
+	}
+	else {
+		ele.style.display = "block";
+		text.innerHTML = "<u>Hide Answer</u>";
+	}
+}
+
+
+random = randomizer(1,3);		//Determines the class
+
+switch (random){		//Sets appropriate attributes to the IP address class, determines number of networks/hosts needed
+		case 1:
+			ipClass = 'A';
+			octet1 = randomizer(1,126);
+			octet2 = 0;	
+			octet3 = 0;
+			octet4 = 0;
+			numberOfNetworks = randomRanges(10,10,500,2000);
+			numberOfHosts = randomRanges(2,10,500,10000);
+			break;
+		
+		case 2:
+			ipClass = 'B';
+			octet1 = randomizer(128,191);
+			octet2 = randomizer(0,255);
+			octet3 = 0;
+			octet4 = 0;
+			numberOfNetworks = randomRanges(2,10,300,500);
+			numberOfHosts = randomRanges(2,10,500,10000);
+			break;
+		
+		case 3:
+			ipClass = 'C';
+			octet1 = randomizer(192,223);
+			octet2 = randomizer(0,255);
+			octet3 = randomizer(0,255);
+			octet4 = 0;
+			numberOfNetworks = randomRanges(2,2,64,64);
+			numberOfHosts = randomRanges(2,2,128,128);
+			break;
+}
+
+
+var v = randomizer(1,3);
+
+switch (v){		//Determines what type of question will be asked
+	case 1:
+		//document.write('classful');
+		classful();
+		break;
+	
+	case 2:
+		//document.write('cidr');
+		cidr();
+		break;
+		
+	case 3:
+		//document.write('nb');
+		nb();
+		break;
+}
+
+
+	function classful(){
+
+		var r = randomizer(1,2);
+		if (r == 1){
+			askClassfulNetworks();
+		}
+		else{
+			askClassfulHosts();
+		}
+		
+		function askClassfulNetworks(){		//Ask user to determine networks based on number of subnets needed
+
+			//Ask the question
+			ipAddr = ( octet1 + '.' + octet2 + '.' + octet3 + '.' + octet4 );
+			question = '<p>Take the Class ' + ipClass + ' network of ' + ipAddr + ' and subnet it into ' + numberOfNetworks + ' networks.</p><p>List the new subnet mask, the increment, and the first few network addresses.</p>';
+			document.write(question);
+
+			document.write('<a href="javascript:toggle();" id="displayText"><u>Show Answer</u></a>');
+			document.write('<div id="toggleText" style="display: none;">');
+
+			//Number of binary digits to get the # of networks needed
+			numBinDigits = dec2bin(numberOfNetworks - 1).length;
+
+			//Set the number of bits in the subnet mask based on which class IP address it is
+			switch (ipClass){
+				case 'A':
+					originalMaskBits = 8;
+					maskBits = numBinDigits + originalMaskBits;
+					break;
+				
+				case 'B':
+					originalMaskBits = 16;
+					maskBits = numBinDigits + originalMaskBits;
+					break;
+				
+				case 'C':
+					originalMaskBits = 24;
+					maskBits = numBinDigits + originalMaskBits;
+					break;
+			}
+
+			//Echo subnet mask
+			document.write('<p>New subnet mask is ' + maskBits + ' bits or ' + mask(maskBits) + '.<br />');
+			
+			
+			var increment = new Array(128,64,32,16,8,4,2,1);		//The increments
+			
+			//Determine the octet in which the networks should be incremented
+			if (maskBits >=9 && maskBits <=16){
+				incrementOctet = 2;
+				incrementPosition = maskBits - 8;
+			}	else if (maskBits >=17 && maskBits <=24){
+				incrementOctet = 3;
+				incrementPosition = maskBits - 16;
+			}	else if (maskBits >=25 && maskBits <=32){
+				incrementOctet = 4;
+				incrementPosition = maskBits - 24;
+			}
+
+			document.write('The increment is ' + increment[incrementPosition - 1] + '.<br />');
+
+			numberOfNetworksAfter = Math.pow(2,(maskBits - originalMaskBits));
+			document.write('<p>Here are the networks:</p><ul>');
+			
+			for (var i = 1; i <=numberOfNetworksAfter; i++){		//Sets the increment	
+				document.write('<li>' + ipAddr + '</li>');
+				switch (incrementOctet) {
+					case 2:
+						octet2 += increment[incrementPosition - 1];
+					break;
+					
+					case 3:
+						octet3 += increment[incrementPosition - 1];
+					break;
+					
+					case 4:
+						octet4 += increment[incrementPosition - 1];
+					break;
+				}
+				
+				if (octet3 >= 256){
+					octet2++;
+					octet3 = 0;
+				}	
+				else if (octet4 >= 256){
+					octet3++;
+					octet4 = 0;
+				}
+				
+				ipAddr = octet1 + '.' + octet2 + '.' + octet3 + '.' + octet4;
+				
+				if (i == 6){
+					document.write('<li>...and so on</li>');
+					break;
+				}
+			}
+			
+			document.write('</ul>');
+			document.write('</div>');	
+			
+			
+		}
+		
+		function askClassfulHosts(){
+
+			//Ask the question
+			ipAddr = ( octet1 + '.' + octet2 + '.' + octet3 + '.' + octet4 );
+			question = '<p>Take the Class ' + ipClass + ' network of  ' + ipAddr + '  and subnet it into networks of  ' + numberOfHosts + '  hosts.</p><p>List the new subnet mask, the increment, and the first few network addresses.</p>';
+			document.write(question);
+			
+			//Number of binary digits to get the # of hosts needed
+			numBinDigits = dec2bin(numberOfHosts + 1).length;
+			
+			//Set the number of bits in the subnet mask 
+			maskBits = 32 - numBinDigits;
+									
+			document.write('<a href="javascript:toggle();" id="displayText"><u>Show Answer</u></a>');
+			document.write('<div id="toggleText" style="display: none;">');
+			
+			
+			//Echo subnet mask
+			document.write('<p>New subnet mask is ' + maskBits + ' bits or ' + mask(maskBits) + '.<br />');
+				
+			//Determine the octet in which the networks should be incremented
+			if (maskBits >=9 && maskBits <=16){
+				incrementOctet = 2;
+				incrementPosition = maskBits - 8;
+			}	else if (maskBits >=17 && maskBits <=24){
+				incrementOctet = 3;
+				incrementPosition = maskBits - 16;
+			}	else if (maskBits >=25 && maskBits <=32){
+				incrementOctet = 4;
+				incrementPosition = maskBits - 24;
+			}
+			
+			//document.write('The increment octet is ' + incrementOctet + '<br />');
+			
+			var increment = new Array(128,64,32,16,8,4,2,1);
+			
+				//Set the number of bits in the subnet mask based on which class IP address it is
+			switch (ipClass){
+				case 'A':
+					originalMaskBits = 8;
+					break;
+				
+				case 'B':
+					originalMaskBits = 16;
+					break;
+				
+				case 'C':
+					originalMaskBits = 24;
+					break;
+			}
+
+			
+			document.write('The increment is ' + increment[incrementPosition - 1] + '.</p>');
+			numberOfNetworksAfter = Math.pow(2,(maskBits - originalMaskBits));
+			numberOfHostsAfter = Math.pow(2,((32 - maskBits))) -2;
+			
+			document.write('<p>Here are the networks:</p><ul>');
+
+			
+				for (var i = 1; i <=numberOfNetworksAfter; i++){
+				document.write('<li>' + ipAddr + '</li>');
+				switch (incrementOctet) {
+					case 2:
+						octet2 += increment[incrementPosition - 1];
+					break;
+					
+					case 3:
+						octet3 += increment[incrementPosition - 1];
+					break;
+					
+					case 4:
+						octet4 += increment[incrementPosition - 1];
+					break;
+				}
+				
+				if (octet3 >= 256){
+					octet2++;
+					octet3 = 0;
+				}	
+				else if (octet4 >= 256){
+					octet3++;
+					octet4 = 0;
+				}
+				
+				ipAddr = octet1 + '.' + octet2 + '.' + octet3 + '.' + octet4;
+				
+				if (i == 6){
+					document.write('<li>...and so on</li>');
+					break;
+				}
+			}
+			
+			document.write('</ul>');			
+			document.write('</div>');
+		}
+
+	}
+
+	function cidr(){
+		
+		var r = randomizer(1,2);
+		if (r == 1){
+			askCIDRNetworks();
+		}
+		else{
+			askCIDRHosts();
+		}
+		
+
+		function askCIDRNetworks(){		//Ask user to determine networks based on number of subnets needed using CIDR mask
+
+			
+				
+				//Ask the question
+				ipAddr = ( octet1 + '.' + octet2 + '.' + octet3 + '.' + octet4 );
+				question = '<p>Take the Class ' + ipClass + ' network of ' + ipAddr + ' and subnet it into ' + numberOfNetworks + ' networks.</p><p>List the new subnet mask, the increment, and the first few network addresses.</p>';
+
+				//Number of binary digits to get the # of networks needed
+				numBinDigits = dec2bin(numberOfNetworks - 1).length;
+
+				
+				//Set the number of bits in the subnet mask based on which class IP address it is
+				switch (ipClass){
+					case 'A':
+						originalMaskBits = 8;
+						maskBits = numBinDigits + originalMaskBits;
+						break;
+					
+					case 'B':
+						originalMaskBits = 16;
+						maskBits = numBinDigits + originalMaskBits;
+						break;
+					
+					case 'C':
+						originalMaskBits = 24;
+						maskBits = numBinDigits + originalMaskBits;
+						if (maskBits >= 30){
+							maskBits = 29;
+						}
+						break;
+				}
+				
+				
+				var increment = new Array(128,64,32,16,8,4,2,1);
+				
+				//Determine the octet in which the networks should be incremented
+				if (maskBits >=9 && maskBits <=16){
+					incrementOctet = 2;
+					incrementPosition = maskBits - 8;
+				}	else if (maskBits >=17 && maskBits <=24){
+					incrementOctet = 3;
+					incrementPosition = maskBits - 16;
+				}	else if (maskBits >=25 && maskBits <=32){
+					incrementOctet = 4;
+					incrementPosition = maskBits - 24;
+				}
+
+			numberOfNetworksAfter = Math.pow(2,(maskBits - originalMaskBits));		//Number of additional networks created
+			numberOfHostsAfter = Math.pow(2,((32 - maskBits))) -2;		//Number of hosts per subnet created
+			
+			var o1 = new Array();		//New placeholders for the octets
+			var o2 = new Array();
+			var o3 = new Array();
+			var o4 = new Array();
+			var ipAddr2 = new Array();
+			
+			for (var i = 1; i <= numberOfNetworksAfter; i++){	
+				
+				o1[i-1] = octet1;
+				o2[i-1] = octet2;
+				o3[i-1] = octet3;
+				o4[i-1] = octet4;
+				
+				ipAddr2[i-1] = o1[i-1] + '.' + o2[i-1] + '.' + o3[i-1] + '.' + o4[i-1];
+				
+				switch (incrementOctet) {
+					case 2:
+						octet2 += increment[incrementPosition - 1];
+					break;
+					
+					case 3:
+						octet3 += increment[incrementPosition - 1];
+					break;
+					
+					case 4:
+						octet4 += increment[incrementPosition - 1];
+					break;
+				}
+				
+				if (octet3 >= 256){
+					octet2++;
+					octet3 = 0;
+				}	
+				else if (octet4 >= 256){
+					octet3++;
+					octet4 = 0;
+				}
+				
+				//if (i == 6){
+				//	document.write('<li>...and so on</li>');
+				//	break;
+				//}
+				
+				
+			}
+						
+			
+			var randomNumber = randomizer(1,numberOfNetworksAfter);		//Selects random network address from the array
+			
+			randomSubnetwork = o1[randomNumber - 1] + '.' + o2[randomNumber - 1] + '.' + o3[randomNumber - 1] + '.' + o4[randomNumber - 1];
+			
+			var numberOfNetworksNeeded = randomizer(2, ((numberOfHostsAfter+2)/4));
+			if (numberOfNetworksNeeded > 100){		//Keeps # of networks needed at a reasonable level
+				numberOfNetworksNeeded = randomizer(2,100);
+			}
+						
+			var u = randomizer(1,2);
+			
+			if (u == 1) {		//Ask the questions
+				document.write('<p>Take the network of ' + randomSubnetwork + '/' + maskBits + '  and subnet it into ' + numberOfNetworksNeeded + ' subnetworks.</p>');
+			}
+			else {
+				document.write('<p>Take the network of ' + randomSubnetwork + '  with a subnet mask of  ' + mask(maskBits) + '  and subnet it into ' + numberOfNetworksNeeded + ' subnetworks.</p>');
+			}
+			
+			document.write('<p>List the new subnet mask, the increment, and the first few network addresses.</p>');
+			
+			numBinDigits = dec2bin(numberOfNetworksNeeded - 1).length;
+
+			var incrementOctet2;		//Increment for the 2nd go around
+			var incrementPosition2;		//Position for 2nd go around
+			var maskBits2 = maskBits + numBinDigits;		//New mask
+			
+			
+			//Determine the increment, round 2
+			if (maskBits2 >=9 && maskBits2 <=16){
+				incrementOctet2 = 2;
+				incrementPosition2 = maskBits2 - 8;
+			}	else if (maskBits2 >=17 && maskBits2 <=24){
+				incrementOctet2 = 3;
+				incrementPosition2 = maskBits2 - 16;
+			}	else if (maskBits2 >=25 && maskBits2 <=32){
+				incrementOctet2 = 4;
+				incrementPosition2 = maskBits2 - 24;
+			}
+						
+			document.write('<a href="javascript:toggle();" id="displayText"><u>Show Answer</u></a>');
+			document.write('<div id="toggleText" style="display: none;">');
+			
+			//Answer
+			document.write('<p>New subnet mask is ' + maskBits2 + ' bits or ' + mask(maskBits2) + '.<br />');
+			document.write('The increment is ' + increment[incrementPosition2 - 1] + '.</p>');
+			
+			document.write('<p>Here are the networks:</p><ul>');
+			
+			var numberOfNetworksAfter2 = Math.pow(2,(maskBits2 - maskBits));
+			
+			var o11 = new Array();
+			var o22 = new Array();
+			var o33 = new Array();
+			var o44 = new Array();
+			var ipAddr3 = new Array();
+			
+			for (var i = 1; i <=numberOfNetworksAfter2; i++){		//Lists the answer networks
+				
+				o11[i-1] = o1[randomNumber - 1];
+				o22[i-1] = o2[randomNumber - 1];
+				o33[i-1] = o3[randomNumber - 1];
+				o44[i-1] = o4[randomNumber - 1];
+				
+				ipAddr3[i-1] = o1[randomNumber - 1] + '.' + o2[randomNumber - 1] + '.' + o3[randomNumber - 1] + '.' + o4[randomNumber - 1]
+				document.write('<li>' + ipAddr3[i-1] + '</li>');
+				switch (incrementOctet2) {
+					case 2:
+						o2[randomNumber - 1] += increment[incrementPosition2 - 1];
+					break;
+					
+					case 3:
+						o3[randomNumber - 1] += increment[incrementPosition2 - 1];
+					break;
+					
+					case 4:
+						o4[randomNumber - 1] += increment[incrementPosition2 - 1];
+					break;
+				}
+				
+				if (o2[randomNumber - 1] >= 256){
+						o1[randomNumber - 1]++;
+						o2[randomNumber - 1] = 0;
+					}	
+				else if (o3[randomNumber - 1] >= 256){
+					o2[randomNumber - 1]++;
+					o3[randomNumber - 1] = 0;
+				}	
+				else if (o4[randomNumber - 1] >= 256){
+					o3[randomNumber - 1]++;
+					o4[randomNumber - 1] = 0;
+				}
+				
+				if (i == 6){
+					document.write('<li>...and so on</li></ul>');
+					break;
+				}
+			}
+		
+		document.write('</div>');
+		
+		}
+
+
+		function askCIDRHosts(){
+
+				//Ask the question
+				ipAddr = ( octet1 + '.' + octet2 + '.' + octet3 + '.' + octet4 );
+				question = '<p>Take the Class ' + ipClass + ' network of ' + ipAddr + ' and subnet it into ' + numberOfNetworks + ' networks.</p><p>List the new subnet mask, the increment, and the first few network addresses.</p>';
+
+				//Number of binary digits to get the # of networks needed
+				numBinDigits = dec2bin(numberOfNetworks - 1).length;
+
+				
+				//Set the number of bits in the subnet mask based on which class IP address it is
+				switch (ipClass){
+					case 'A':
+						originalMaskBits = 8;
+						maskBits = numBinDigits + originalMaskBits;
+						break;
+					
+					case 'B':
+						originalMaskBits = 16;
+						maskBits = numBinDigits + originalMaskBits;
+						break;
+					
+					case 'C':
+						originalMaskBits = 24;
+						maskBits = numBinDigits + originalMaskBits;
+						if (maskBits >= 30){
+							maskBits = 29;
+						}
+						break;
+				}
+				
+				
+				var increment = new Array(128,64,32,16,8,4,2,1);
+				
+				//Determine the octet in which the networks should be incremented
+				if (maskBits >=9 && maskBits <=16){
+					incrementOctet = 2;
+					incrementPosition = maskBits - 8;
+				}	else if (maskBits >=17 && maskBits <=24){
+					incrementOctet = 3;
+					incrementPosition = maskBits - 16;
+				}	else if (maskBits >=25 && maskBits <=32){
+					incrementOctet = 4;
+					incrementPosition = maskBits - 24;
+				}
+
+
+			numberOfNetworksAfter = Math.pow(2,(maskBits - originalMaskBits));
+			numberOfHostsAfter = Math.pow(2,((32 - maskBits))) -2;
+			
+			var o1 = new Array();
+			var o2 = new Array();
+			var o3 = new Array();
+			var o4 = new Array();
+			var ipAddr2 = new Array();
+			
+			for (var i = 1; i <= numberOfNetworksAfter; i++){
+				
+				o1[i-1] = octet1;
+				o2[i-1] = octet2;
+				o3[i-1] = octet3;
+				o4[i-1] = octet4;
+				
+				ipAddr2[i-1] = o1[i-1] + '.' + o2[i-1] + '.' + o3[i-1] + '.' + o4[i-1];
+				//document.write('<li>' + i + '. ' + ipAddr2[i-1] + '</li>');
+				
+				switch (incrementOctet) {
+					case 2:
+						octet2 += increment[incrementPosition - 1];
+					break;
+					
+					case 3:
+						octet3 += increment[incrementPosition - 1];
+					break;
+					
+					case 4:
+						octet4 += increment[incrementPosition - 1];
+					break;
+				}
+				
+				if (octet3 >= 256){
+					octet2++;
+					octet3 = 0;
+				}	
+				else if (octet4 >= 256){
+					octet3++;
+					octet4 = 0;
+				}
+				
+				//if (i == 6){
+				//	document.write('<li>...and so on</li>');
+				//	break;
+				//}
+				
+				
+			}
+						
+			var randomNumber = randomizer(1,numberOfNetworksAfter);
+			//document.write('Subnet #' + randomNumber + ' is ' + o1[randomNumber - 1] + '.' + o2[randomNumber - 1] + '.' + o3[randomNumber - 1] + '.' + o4[randomNumber - 1]);
+			
+			
+			randomSubnetwork = o1[randomNumber - 1] + '.' + o2[randomNumber - 1] + '.' + o3[randomNumber - 1] + '.' + o4[randomNumber - 1];
+			
+			var numberOfHostsNeeded = randomizer(2, (((numberOfHostsAfter+2)/2)-2));
+			if (numberOfHostsNeeded > 5000){
+				numberOfHostsNeeded = randomizer(4,5000);
+			}
+			var numberOfNetworksNeeded = randomizer(2, ((numberOfHostsAfter+2)/4));
+			if (numberOfNetworksNeeded > 100){
+				numberOfNetworksNeeded = randomizer(2,100);
+			}
+						
+			var w = randomizer(1,2);
+			if (w == 1){
+				document.write('<p>Take the network of ' + randomSubnetwork + '/' + maskBits + '  and subnet it into subnetworks of ' + numberOfHostsNeeded + ' hosts each.</p>');
+			}
+			else {
+				document.write('<p>Take the network of ' + randomSubnetwork + '  with a subnet mask of  ' + mask(maskBits) + '  and subnet it into subnetworks of ' + numberOfHostsNeeded + ' hosts each.</p>');
+			}
+			
+			document.write('<p>List the new subnet mask, the increment, and the first few network addresses.</p>');
+
+			
+			numBinDigits = dec2bin(numberOfHostsNeeded + 1).length;
+
+			
+			document.write('<a href="javascript:toggle();" id="displayText"><u>Show Answer</u></a>');
+			document.write('<div id="toggleText" style="display: none;">');
+			
+			
+			var maskBits2 = 32 - numBinDigits;
+			document.write('<p>New subnet mask is ' + maskBits2 + ' bits or ' + mask(maskBits2) + '.<br />');
+			
+
+
+			var incrementOctet2;
+			var incrementPosition2;
+			
+			//Determine the increment octet of the answer.
+			if (maskBits2 >=9 && maskBits2 <=16){
+				incrementOctet2 = 2;
+				incrementPosition2 = maskBits2 - 8;
+			}	else if (maskBits2 >=17 && maskBits2 <=24){
+				incrementOctet2 = 3;
+				incrementPosition2 = maskBits2 - 16;
+			}	else if (maskBits2 >=25 && maskBits2 <=32){
+				incrementOctet2 = 4;
+				incrementPosition2 = maskBits2 - 24;
+			}
+			
+			document.write('The increment is ' + increment[incrementPosition2 - 1] + '</p>');
+			
+			document.write('<p>Here are the networks:</p><ul>');
+			
+			var numberOfNetworksAfter2 = Math.pow(2,(maskBits2 - maskBits));
+			
+			var numberOfHostsAfter2 = Math.pow(2,((32 - maskBits2))) -2;			
+			
+			var ipAddr3 = new Array();
+			
+			
+			
+			for (var i = 1; i <=numberOfNetworksAfter2; i++){
+				
+				ipAddr3[i-1] = o1[randomNumber - 1] + '.' + o2[randomNumber - 1] + '.' + o3[randomNumber - 1] + '.' + o4[randomNumber - 1]
+				document.write('<li>' + ipAddr3[i-1] + '</li>');
+				switch (incrementOctet2) {
+					case 2:
+						o2[randomNumber - 1] += increment[incrementPosition2 - 1];
+					break;
+					
+					case 3:
+						o3[randomNumber - 1] += increment[incrementPosition2 - 1];
+					break;
+					
+					case 4:
+						o4[randomNumber - 1] += increment[incrementPosition2 - 1];
+					break;
+				}
+				
+				if (o2[randomNumber - 1] >= 256){
+						o1[randomNumber - 1]++;
+						o2[randomNumber - 1] = 0;
+					}	
+				else if (o3[randomNumber - 1] >= 256){
+					o2[randomNumber - 1]++;
+					o3[randomNumber - 1] = 0;
+				}	
+				else if (o4[randomNumber - 1] >= 256){
+					o3[randomNumber - 1]++;
+					o4[randomNumber - 1] = 0;
+				}
+				
+				if (i == 6){
+					document.write('<li>...and so on</li></ul>');
+					break;
+				}
+			}
+		
+		document.write('</div>');
+		
+		}
+
+	}
+
+	function nb(){
+
+		//Ask the question
+		ipAddr = ( octet1 + '.' + octet2 + '.' + octet3 + '.' + octet4 );
+		question = '<p>Take the Class ' + ipClass + ' network of ' + ipAddr + ' and subnet it into ' + numberOfNetworks + ' networks.</p><p>List the new subnet mask, the increment, and the first few network addresses.</p>';
+
+		//Number of binary digits to get the # of networks needed
+		numBinDigits = dec2bin(numberOfNetworks - 1).length;
+
+		
+		//Set the number of bits in the subnet mask based on which class IP address it is
+		switch (ipClass){
+			case 'A':
+				originalMaskBits = 8;
+				maskBits = numBinDigits + originalMaskBits;
+				break;
+			
+			case 'B':
+				originalMaskBits = 16;
+				maskBits = numBinDigits + originalMaskBits;
+				break;
+			
+			case 'C':
+				originalMaskBits = 24;
+				maskBits = numBinDigits + originalMaskBits;
+				if (maskBits >= 30){
+					maskBits = 29;
+				}
+				break;
+		}
+		
+		
+		var increment = new Array(128,64,32,16,8,4,2,1);
+		
+		//Determine the octet in which the networks should be incremented
+		if (maskBits >=9 && maskBits <=16){
+			incrementOctet = 2;
+			incrementPosition = maskBits - 8;
+		}	else if (maskBits >=17 && maskBits <=24){
+			incrementOctet = 3;
+			incrementPosition = maskBits - 16;
+		}	else if (maskBits >=25 && maskBits <=32){
+			incrementOctet = 4;
+			incrementPosition = maskBits - 24;
+		}
+
+
+	numberOfNetworksAfter = Math.pow(2,(maskBits - originalMaskBits));
+	numberOfHostsAfter = Math.pow(2,((32 - maskBits))) -2;
+	
+	var o1 = new Array();
+	var o2 = new Array();
+	var o3 = new Array();
+	var o4 = new Array();
+	var ipAddr2 = new Array();
+	
+	for (var i = 1; i <= numberOfNetworksAfter; i++){		
+		
+		o1[i-1] = octet1;
+		o2[i-1] = octet2;
+		o3[i-1] = octet3;
+		o4[i-1] = octet4;
+		
+		ipAddr2[i-1] = o1[i-1] + '.' + o2[i-1] + '.' + o3[i-1] + '.' + o4[i-1];
+		
+		switch (incrementOctet) {
+			case 2:
+				octet2 += increment[incrementPosition - 1];
+			break;
+			
+			case 3:
+				octet3 += increment[incrementPosition - 1];
+			break;
+			
+			case 4:
+				octet4 += increment[incrementPosition - 1];
+			break;
+		}
+		
+		if (octet3 >= 256){
+			octet2++;
+			octet3 = 0;
+		}	
+		else if (octet4 >= 256){
+			octet3++;
+			octet4 = 0;
+		}
+		
+		//if (i == 6){
+		//	document.write('<li>...and so on</li>');
+		//	break;
+		//}
+		
+		
+	}	
+	
+	
+	var randomNumber = randomizer(1,numberOfNetworksAfter);		//Picks random number to select a network from the array
+	
+	randomSubnetwork = o1[randomNumber - 1] + '.' + o2[randomNumber - 1] + '.' + o3[randomNumber - 1] + '.' + o4[randomNumber - 1];
+	
+	var numberOfHostsNeeded = randomizer(2, (((numberOfHostsAfter+2)/2)-2));
+	var numberOfNetworksNeeded = randomizer(2, ((numberOfHostsAfter+2)/4));
+	if (numberOfNetworksNeeded > 100){
+		numberOfNetworksNeeded = randomizer(2,100);
+	}
+	
+	if (numberOfHostsNeeded > 5000){		//Keeps # of hosts at a reasonable level
+		numberOfHostsNeeded = randomizer(2,5000)
+	}
+	
+	numBinDigits = dec2bin(numberOfHostsNeeded + 1).length;
+
+	var maskBits2 = 32 - numBinDigits;
+	
+
+
+	var incrementOctet2;
+	var incrementPosition2;
+	
+	//Determine the increment octet of the answer.
+	if (maskBits2 >=9 && maskBits2 <=16){
+		incrementOctet2 = 2;
+		incrementPosition2 = maskBits2 - 8;
+	}	else if (maskBits2 >=17 && maskBits2 <=24){
+		incrementOctet2 = 3;
+		incrementPosition2 = maskBits2 - 16;
+	}	else if (maskBits2 >=25 && maskBits2 <=32){
+		incrementOctet2 = 4;
+		incrementPosition2 = maskBits2 - 24;
+	}
+		
+	var numberOfNetworksAfter2 = Math.pow(2,(maskBits2 - maskBits));
+	
+	var numberOfHostsAfter2 = Math.pow(2,((32 - maskBits2))) -2;
+	
+	var ipAddr3 = new Array();
+	
+	
+	
+	for (var i = 1; i <=numberOfNetworksAfter2; i++){
+		
+		ipAddr3[i-1] = o1[randomNumber - 1] + '.' + o2[randomNumber - 1] + '.' + o3[randomNumber - 1] + '.' + o4[randomNumber - 1];
+		
+		o1[i-1] = o1[randomNumber - 1];
+		o2[i-1] = o2[randomNumber - 1];
+		o3[i-1] = o3[randomNumber - 1];
+		o4[i-1] = o4[randomNumber - 1];
+		//document.write('<li>' + o1[randomNumber - 1] + '.' + o2[randomNumber - 1] + '.' + o3[randomNumber - 1] + '.' + o4[randomNumber - 1] + '</li>');
+		switch (incrementOctet2) {
+			case 2:
+				o2[randomNumber - 1] += increment[incrementPosition2 - 1];
+			break;
+			
+			case 3:
+				o3[randomNumber - 1] += increment[incrementPosition2 - 1];
+			break;
+			
+			case 4:
+				o4[randomNumber - 1] += increment[incrementPosition2 - 1];
+			break;
+		}
+		
+		if (o2[randomNumber - 1] >= 256){
+				o1[randomNumber - 1]++;
+				o2[randomNumber - 1] = 0;
+			}	
+		else if (o3[randomNumber - 1] >= 256){
+			o2[randomNumber - 1]++;
+			o3[randomNumber - 1] = 0;
+		}	
+		else if (o4[randomNumber - 1] >= 256){
+			o3[randomNumber - 1]++;
+			o4[randomNumber - 1] = 0;
+		}
+		
+		//if (i == 6){
+		//	document.write('<li>...and so on</li>');
+		//	break;
+		}
+
+		var newRandom = randomizer(1,numberOfNetworksAfter2);
+		var networkIDFrom4 = o4[newRandom - 1];
+		var networkIDFrom3 = o3[newRandom - 1];
+		var networkIDFrom2 = o2[newRandom - 1];
+						
+		switch (incrementOctet2){
+			case 4:
+				o4[newRandom - 1] +=  (increment[incrementPosition2 - 1] - 1);
+			break;
+			
+			case 3:
+				o4[newRandom - 1] = 255;
+ 				o3[newRandom - 1] +=  (increment[incrementPosition2 - 1] - 1);
+			break;
+			
+			case 2:
+				o4[newRandom - 1] = 255;
+				o3[newRandom - 1] = 255;
+				o2[newRandom - 1] +=  (increment[incrementPosition2 - 1] - 1);
+			break;
+		
+		}
+	
+	var broadcastAdd = o1[newRandom - 1] + '.' + o2[newRandom - 1] + '.' + o3[newRandom - 1] + '.' + o4[newRandom - 1];
+	
+	var newestRandomNumber = randomizer(1,numberOfHostsAfter2);
+	var randomIP;
+	
+	switch (incrementOctet2){
+		case 4:
+			randomIP = o1[newRandom - 1] + '.' + o2[newRandom - 1] + '.' + o3[newRandom - 1] + '.' + randomizer((networkIDFrom4 + 1),(o4[newRandom - 1] -1));
+		break;
+		case 3:
+			var oo3 = randomizer(networkIDFrom3,o3[newRandom - 1]);
+			var oo4 = randomizer(0,255);
+
+			if (oo3 == networkIDFrom3 && oo4 == 0){
+				oo4 = 1;
+			}
+			else if (oo3 == o3[newRandom - 1] && oo4 == 255){
+				oo4 = 254;
+			}
+			randomIP = o1[newRandom - 1] + '.' + o2[newRandom - 1] + '.' + oo3 + '.' + oo4;
+		break;
+		case 2:
+			var oo2 = randomizer(networkIDFrom2,o2[newRandom - 1]);
+			var oo3 = randomizer(0,255);
+			var oo4 = randomizer(0,255);
+			if (oo2 == networkIDFrom2 && oo3 == 0 && oo4 == 0){
+				oo4 = 254;
+			}
+			else if (oo2 == o2[newRandom - 1] && oo3 == 255 && oo4 == 255){
+				oo4 = 254;
+			}
+			
+			randomIP = o1[newRandom - 1] + '.' + oo2 + '.' + oo3 + '.' + oo4;
+		break;
+	}
+	
+	var z = randomizer(1,4);		//Randomly determines what question to ask
+		switch (z){
+		case 1:
+			networkAndBroadcast();
+			break;
+		case 2:
+			hostRange();
+			break;
+		case 3:
+			lastHost();
+			break;
+		case 4:
+			firsHost();
+			break;
+		}
+	
+	
+	
+	
+	
+	
+	
+	function networkAndBroadcast(){		//Asks what the network and broadcast addresses are in a specific network
+	
+		var a = randomizer(1,2)
+		if (a == 1){
+			document.write('<p>What is the network and broadcast address of the host  ' + randomIP + '/' + maskBits2 + '?</p>');
+		}
+		else {
+			document.write('<p>What is the network and broadcast address of the host  ' + randomIP + '  with a subnet mask of  ' + mask(maskBits2) + '?</p>');
+		}
+		
+		document.write('<a href="javascript:toggle();" id="displayText"><u>Show Answer</u></a>');
+		document.write('<div id="toggleText" style="display: none;">');
+		
+		document.write('<p>The network address is ' + ipAddr3[newRandom-1] + '<br />');
+		document.write('The broadcast address is ' + broadcastAdd + '</p>');
+		document.write('</div>');
+	}
+		
+		
+		
+	function hostRange(){		//Asks the host range of a specific network
+		
+		var b = randomizer(1,2)
+		if (b == 1){
+			document.write('<p>What is the host range of a network with the host  ' + randomIP + '/' + maskBits2 + '?</p>');
+		}
+		else {
+			document.write('<p>What is the host range of a network with the host  ' + randomIP + '  with a subnet mask of  ' + mask(maskBits2) + '?</p>');
+		}
+		
+		var firstHost = o1[newRandom-1] + '.' + networkIDFrom2 + '.' + networkIDFrom3 + '.' + (networkIDFrom4 + 1);
+		var lastHost = o1[newRandom - 1] + '.' + o2[newRandom - 1] + '.' + o3[newRandom - 1] + '.' + (o4[newRandom - 1] -1);
+		
+		document.write('<a href="javascript:toggle();" id="displayText"><u>Show Answer</u></a>');
+		document.write('<div id="toggleText" style="display: none;">');
+		
+		document.write('<p>' + firstHost + ' through ' + lastHost + '</p>');
+		document.write('</div>');
+	}
+		
+		
+	function lastHost(){		//Asks what the last host address is in a network
+		
+		var c = randomizer(1,2)
+		if (c == 1){
+			document.write('<p>What is the last host address of a network with the host  ' + randomIP + '/' + maskBits2 + '?</p>');
+		}
+		else {
+			document.write('<p>What is the last host address of a network with the host  ' + randomIP + '  with a subnet mask of  ' + mask(maskBits2) + '?</p>');
+		}
+		
+		var firstHost = o1[newRandom-1] + '.' + networkIDFrom2 + '.' + networkIDFrom3 + '.' + (networkIDFrom4 + 1);
+		var lastHost = o1[newRandom - 1] + '.' + o2[newRandom - 1] + '.' + o3[newRandom - 1] + '.' + (o4[newRandom - 1] -1);
+		
+		document.write('<a href="javascript:toggle();" id="displayText"><u>Show Answer</u></a>');
+		document.write('<div id="toggleText" style="display: none;">');
+		
+		document.write('<p>' + lastHost + '</p>');
+		document.write('</div>');
+				
+	}
+		
+		
+	function firsHost(){		//Asks what the first host is in the network
+		
+		var d = randomizer(1,2)
+		if (d == 1){
+			document.write('<p>What is the first host address of a network with the host  ' + randomIP + '/' + maskBits2 + '?</p>');
+		}
+		else {
+			document.write('<p>What is the first host address of a network with the host  ' + randomIP + '  with a subnet mask of  ' + mask(maskBits2) + '?</p>');
+		}
+		
+		var firstHost = o1[newRandom-1] + '.' + networkIDFrom2 + '.' + networkIDFrom3 + '.' + (networkIDFrom4 + 1);
+		var lastHost = o1[newRandom - 1] + '.' + o2[newRandom - 1] + '.' + o3[newRandom - 1] + '.' + (o4[newRandom - 1] -1);
+
+		document.write('<a href="javascript:toggle();" id="displayText"><u>Show Answer</u></a>');
+		document.write('<div id="toggleText" style="display: none;">');
+		document.write('<p>' + firstHost + '</p>');
+		document.write('</div>');
+	}
+}
+// ]]></script>
+<script type="text/javascript">// <![CDATA[
+
+// ]]></script>
+<p><a href="javascript:history.go(0);">New Question</a></p>
+</body>
+</html>
